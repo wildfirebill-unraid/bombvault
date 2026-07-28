@@ -1,3 +1,8 @@
+<!--
+Description: BombVault is a free, open-source Unraid backup and disaster recovery tool. Backs up Docker containers, KVM/libvirt VMs, appdata, and Unraid USB flash. One-click restore. Powered by restic.
+Keywords: unraid backup, docker backup unraid, kvm vm backup, unraid disaster recovery, appdata backup, unraid flash backup, restic unraid, unraid docker template, unraid data protection
+-->
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/wildfirebill-unraid/bombvault/main/.github/assets/bombvault-banner-dark.png">
@@ -18,7 +23,11 @@
 
 <br>
 
+<h1 align="center">BombVault — Unraid Backup &amp; Disaster Recovery</h1>
+
 <p align="center">
+<strong>Docker container backup · KVM VM backup · Unraid flash backup · Appdata backup · restic engine</strong><br>
+<br>
 Your Unraid data, <b>sealed in a vault</b>. Drop a backup. Detonate a restore.<br>
 BombVault backs up Docker containers, KVM VMs, appdata, the Unraid flash config — and even itself —
 and restores everything with a single click. Containers <b>automatically reappear in the
@@ -47,12 +56,12 @@ Powered by <a href="https://restic.net">restic</a> — deduplicated, incremental
 
 ## Table of Contents
 
-1. [What is this?](#1-what-is-this)
+1. [What is BombVault? — Unraid Backup &amp; Disaster Recovery](#1-what-is-bombvault--unraid-backup--disaster-recovery)
 2. [Screenshots](#2-screenshots)
 3. [Features](#3-features)
-4. [How it works](#4-how-it-works)
-5. [Security / trust model](#5-security--trust-model)
-6. [Requirements](#6-requirements)
+4. [How BombVault works — Docker, libvirt, restic architecture](#4-how-bombvault-works--docker-libvirt-restic-architecture)
+5. [Security &amp; trust model](#5-security--trust-model)
+6. [Requirements — Unraid, Docker, KVM, SSH](#6-requirements--unraid-docker-kvm-ssh)
 7. [Install on Unraid](#7-install-on-unraid)
 8. [Configuration](#8-configuration)
 9. [Development](#9-development)
@@ -61,7 +70,7 @@ Powered by <a href="https://restic.net">restic</a> — deduplicated, incremental
 
 <br>
 
-## 1. What is this?
+## 1. What is BombVault? — Unraid Backup &amp; Disaster Recovery
 
 BombVault is a self-hosted, **Unraid-native** web app for **backup and full disaster recovery** of your Docker containers and KVM/libvirt VMs. It runs as a single Docker container, gives you a modern dark web UI, and handles the whole lifecycle:
 
@@ -188,7 +197,7 @@ The core idea — one-click backup *and* automatic re-install of Docker containe
 
 <br>
 
-## 4. How it works
+## 4. How BombVault works — Docker, libvirt, restic architecture
 
 ```
 Browser ──HTTPS──> BombVault container
@@ -209,7 +218,7 @@ Restore is the star: after copying data back from the restic snapshot, BombVault
 
 <br>
 
-## 5. Security / trust model
+## 5. Security &amp; trust model
 
 > [!WARNING]
 > **BombVault holds root-equivalent control of the host**: via the Docker socket it can
@@ -243,7 +252,7 @@ key derived from `APP_KEY`.
 
 <br>
 
-## 6. Requirements
+## 6. Requirements — Unraid, Docker, KVM, SSH
 
 | Requirement | Notes |
 |---|---|
