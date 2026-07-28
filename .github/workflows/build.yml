@@ -1,7 +1,6 @@
 name: Build Docker Image
 
-# Build the multi-arch image and, on main, push it to GHCR so it can be pulled on the
-# Unraid box (e.g. for the integration spike). Pull requests build only (no push).
+# Build the multi-arch image and, on main, push it to GHCR. Pull requests build only (no push).
 on:
   push:
     branches: [main]
@@ -115,22 +114,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Docker Hub mirror — active only once DOCKERHUB_USERNAME (variable) and
-      # DOCKERHUB_TOKEN (secret) are set together; otherwise skipped (GHCR-only).
-      - name: Log in to Docker Hub
-        if: ${{ github.event_name != 'pull_request' && vars.DOCKERHUB_USERNAME != '' }}
-        uses: docker/login-action@06fb636fac595d6fb4b28a5dfcb21a6f5091859c # v4
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Docker metadata (tags + labels)
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         with:
-          images: |
-            ${{ env.IMAGE }}
-            name=docker.io/${{ vars.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }},enable=${{ vars.DOCKERHUB_USERNAME != '' }}
+          images: ${{ env.IMAGE }}
           tags: |
             type=sha,format=short
             type=raw,value=latest,enable={{is_default_branch}}
@@ -174,30 +162,4 @@ jobs:
           provenance: true
           sbom: true
 
-      # Mirror the GitHub README to the Docker Hub repo's full description (same
-      # text as on GitHub; relative image/link paths completed to absolute so they
-      # render on Docker Hub). Editing the description needs a credential the push
-      # token (DOCKERHUB_TOKEN) lacks — it returns 403 — so this uses a separate
-      # DOCKERHUB_PASSWORD secret (Docker Hub account password, or a PAT scoped to
-      # edit repos). Skipped until that secret is set, so a missing credential
-      # never fails the build.
-      - name: Docker Hub description sync ready?
-        id: dhdesc
-        if: ${{ vars.DOCKERHUB_USERNAME != '' && github.event_name != 'pull_request' }}
-        env:
-          PW: ${{ secrets.DOCKERHUB_PASSWORD }}
-        run: |
-          if [ -n "$PW" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; else echo "DOCKERHUB_PASSWORD not set — skipping Docker Hub description sync"; echo "go=false" >> "$GITHUB_OUTPUT"; fi
-      - name: Sync README to Docker Hub
-        if: ${{ steps.dhdesc.outputs.go == 'true' }}
-        uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: ${{ vars.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
-          short-description: "Backup and full disaster recovery for Unraid: Docker containers, KVM VMs and the USB flash."
-          # The full README exceeds Docker Hub's 25000-byte description limit (it
-          # gets truncated mid-page), so Docker Hub gets a condensed edition that
-          # links back to GitHub for the full docs.
-          readme-filepath: .github/DOCKERHUB.md
-          enable-url-completion: true
+
