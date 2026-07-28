@@ -34,7 +34,7 @@ func PushBackup(ctx context.Context, cfg Config, owner, repo, domain, sourceDir 
 	if err != nil {
 		return fmt.Errorf("create temp dir: %w", err)
 	}
-	defer os.RemoveAll(tmp)
+	defer func() { _ = os.RemoveAll(tmp) }()
 
 	cloneURL := fmt.Sprintf("https://%s@github.com/%s/%s.git", cfg.Token, owner, repo)
 	gitDir := filepath.Join(tmp, "repo")
@@ -45,7 +45,7 @@ func PushBackup(ctx context.Context, cfg Config, owner, repo, domain, sourceDir 
 
 	dateFolder := time.Now().Format("01-02-2006")
 	targetDir := filepath.Join(gitDir, dateFolder, domain)
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
+	if err := os.MkdirAll(targetDir, 0700); err != nil {
 		return fmt.Errorf("create target dir: %w", err)
 	}
 
@@ -57,8 +57,8 @@ func PushBackup(ctx context.Context, cfg Config, owner, repo, domain, sourceDir 
 		return run(ctx, gitDir, "git", args...)
 	}
 
-	git("config", "user.name", cfg.User)
-	git("config", "user.email", cfg.Email)
+	_, _ = git("config", "user.name", cfg.User)
+	_, _ = git("config", "user.email", cfg.Email)
 
 	if out, err := git("add", "-A"); err != nil {
 		return fmt.Errorf("git add: %w\n%s", err, out)
@@ -78,7 +78,7 @@ func PushBackup(ctx context.Context, cfg Config, owner, repo, domain, sourceDir 
 
 func TestAccess(ctx context.Context, cfg Config, owner, repo string) error {
 	cloneURL := fmt.Sprintf("https://%s@github.com/%s/%s.git", cfg.Token, owner, repo)
-	out, err := exec.CommandContext(ctx, "git", "ls-remote", cloneURL, "HEAD").CombinedOutput()
+	out, err := exec.CommandContext(ctx, "git", "ls-remote", cloneURL, "HEAD").CombinedOutput() //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("github access test failed: %w\n%s", err, string(out))
 	}
@@ -86,7 +86,7 @@ func TestAccess(ctx context.Context, cfg Config, owner, repo string) error {
 }
 
 func run(ctx context.Context, dir, name string, args ...string) (string, error) {
-	c := exec.CommandContext(ctx, name, args...)
+	c := exec.CommandContext(ctx, name, args...) //nolint:gosec
 	c.Dir = dir
 	out, err := c.CombinedOutput()
 	return string(out), err
@@ -105,10 +105,10 @@ func CopyDir(src, dst string) error {
 		if fi.IsDir() {
 			return os.MkdirAll(target, fi.Mode())
 		}
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(path) //nolint:gosec
 		if err != nil {
 			return err
 		}
-		return os.WriteFile(target, data, fi.Mode())
+		return os.WriteFile(target, data, fi.Mode()) //nolint:gosec
 	})
 }

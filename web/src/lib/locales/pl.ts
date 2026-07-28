@@ -339,6 +339,8 @@ const pl: Partial<Translations> = {
   "cloud.title": "Poświadczenia chmury (S3 / restic REST)",
   "cloud.hint": "Poświadczenia dla zdalnych backendów restic, bez rclone. Po zapisaniu ustaw ścieżkę kopii na zdalne repo, np. s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path lub sftp:user@host:/repo. Sekrety są zapisywane zaszyfrowane i nie są ponownie pokazywane.",
   "cloud.secretSet": "zapisano — zostaw puste, aby zachować",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "Zapisz konfigurację",
 
   // Integrity (restic check)

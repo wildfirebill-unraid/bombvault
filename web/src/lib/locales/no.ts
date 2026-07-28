@@ -344,6 +344,8 @@ const no: Partial<Translations> = {
   "cloud.title": "Sky-legitimasjon (S3 / restic REST)",
   "cloud.hint": "Legitimasjon for eksterne restic-backender, uten rclone. Etter lagring setter du en backup-sti til et eksternt repo, f.eks. s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path eller sftp:user@host:/repo. Hemmeligheter lagres kryptert og vises ikke igjen.",
   "cloud.secretSet": "lagret — la stå tomt for å beholde",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "Lagre konfigurasjon",
 
   // Integrity (restic check)

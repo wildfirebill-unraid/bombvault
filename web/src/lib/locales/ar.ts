@@ -346,6 +346,8 @@ const ar: Partial<Translations> = {
   "cloud.title": "بيانات اعتماد السحابة (S3 / restic REST)",
   "cloud.hint": "بيانات اعتماد لخلفيات restic عن بُعد، بدون rclone. بعد الحفظ، عيّن مسار النسخ الاحتياطي إلى مستودع بعيد، مثل s3:s3.amazonaws.com/bucket/path أو rest:http://host:8000/repo أو b2:bucket:path أو sftp:user@host:/repo. تُخزَّن الأسرار مشفّرة ولا تُعرض مرة أخرى.",
   "cloud.secretSet": "محفوظ — اتركه فارغًا للإبقاء عليه",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "حفظ الإعداد",
 
   // Integrity (restic check)

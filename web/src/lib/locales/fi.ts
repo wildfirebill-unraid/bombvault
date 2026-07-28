@@ -346,6 +346,8 @@ const fi: Partial<Translations> = {
   "cloud.title": "Pilvitunnukset (S3 / restic REST)",
   "cloud.hint": "Tunnukset etä-restic-taustajärjestelmille, ilman rclonea. Aseta tallennuksen jälkeen varmuuskopiopolku etärepoon, esim. s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path tai sftp:user@host:/repo. Salaisuudet tallennetaan salattuina eikä niitä näytetä uudelleen.",
   "cloud.secretSet": "tallennettu — jätä tyhjäksi säilyttääksesi",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "Tallenna määritys",
 
   // Integrity (restic check)

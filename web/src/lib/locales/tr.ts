@@ -346,6 +346,8 @@ const tr: Partial<Translations> = {
   "cloud.title": "Bulut kimlik bilgileri (S3 / restic REST)",
   "cloud.hint": "rclone olmadan uzak restic arka uçları için kimlik bilgileri. Kaydettikten sonra bir yedek yolunu uzak bir depoya ayarlayın, ör. s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path veya sftp:user@host:/repo. Gizli bilgiler şifreli saklanır ve bir daha gösterilmez.",
   "cloud.secretSet": "kaydedildi — korumak için boş bırakın",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "Yapılandırmayı kaydet",
 
   // Integrity (restic check)

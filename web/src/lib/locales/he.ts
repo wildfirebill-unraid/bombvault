@@ -346,6 +346,8 @@ const he: Partial<Translations> = {
   "cloud.title": "פרטי התחברות לענן (S3 / restic REST)",
   "cloud.hint": "פרטי התחברות ל-backends מרוחקים של restic, ללא rclone. לאחר השמירה, הגדר נתיב גיבוי למאגר מרוחק, למשל s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path או sftp:user@host:/repo. הסודות נשמרים מוצפנים ואינם מוצגים שוב.",
   "cloud.secretSet": "נשמר — השאר ריק כדי לשמור",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "שמור תצורה",
 
   // Integrity (restic check)

@@ -342,6 +342,8 @@ const vi: Partial<Translations> = {
   "cloud.title": "Thông tin đăng nhập đám mây (S3 / restic REST)",
   "cloud.hint": "Thông tin đăng nhập cho các backend restic từ xa, không cần rclone. Sau khi lưu, đặt đường dẫn sao lưu tới một repo từ xa, ví dụ s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path hoặc sftp:user@host:/repo. Bí mật được lưu mã hóa và không hiển thị lại.",
   "cloud.secretSet": "đã lưu — để trống để giữ nguyên",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "Lưu cấu hình",
 
   "integrity.title": "Toàn vẹn",

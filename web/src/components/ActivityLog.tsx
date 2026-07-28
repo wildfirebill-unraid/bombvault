@@ -161,7 +161,7 @@ export function ActivityLog({
 
   const lines = useMemo(
     () => buildLogLines(runs, progressMap, scheduleNext, resolveName, now),
-    [runs, progressMap, scheduleNext, now, t]
+    [runs, progressMap, scheduleNext, resolveName, now, t]
   );
 
   // Date locale is deliberately OMITTED (undefined): formatLogDate and the

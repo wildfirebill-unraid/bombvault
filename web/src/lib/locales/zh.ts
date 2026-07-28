@@ -342,6 +342,8 @@ const zh: Partial<Translations> = {
   "cloud.title": "云凭据（S3 / restic REST）",
   "cloud.hint": "用于远程 restic 后端的凭据，无需 rclone。保存后，将备份路径设置为远程仓库，例如 s3:s3.amazonaws.com/bucket/path、rest:http://host:8000/repo、b2:bucket:path 或 sftp:user@host:/repo。密钥以加密方式存储，不会再次显示。",
   "cloud.secretSet": "已保存 — 留空以保留",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "保存配置",
 
   "integrity.title": "完整性",

@@ -342,6 +342,8 @@ const ko: Partial<Translations> = {
   "cloud.title": "클라우드 자격 증명 (S3 / restic REST)",
   "cloud.hint": "rclone 없이 원격 restic 백엔드용 자격 증명. 저장 후 백업 경로를 원격 저장소로 설정하세요. 예: s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path 또는 sftp:user@host:/repo. 비밀 값은 암호화되어 저장되며 다시 표시되지 않습니다.",
   "cloud.secretSet": "저장됨 — 유지하려면 비워 두세요",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "설정 저장",
 
   "integrity.title": "무결성",

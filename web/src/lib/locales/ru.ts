@@ -339,6 +339,8 @@ const ru: Partial<Translations> = {
   "cloud.title": "Учётные данные облака (S3 / restic REST)",
   "cloud.hint": "Учётные данные для удалённых бэкендов restic, без rclone. После сохранения задайте путь резервной копии на удалённый репозиторий, напр. s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path или sftp:user@host:/repo. Секреты хранятся в зашифрованном виде и больше не показываются.",
   "cloud.secretSet": "сохранено — оставьте пустым, чтобы сохранить",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "Сохранить конфигурацию",
 
   // Integrity (restic check)

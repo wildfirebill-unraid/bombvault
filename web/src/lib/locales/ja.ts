@@ -342,6 +342,8 @@ const ja: Partial<Translations> = {
   "cloud.title": "クラウド認証情報 (S3 / restic REST)",
   "cloud.hint": "rclone なしのリモート restic バックエンド用の認証情報。保存後、バックアップパスをリモートリポジトリに設定します（例: s3:s3.amazonaws.com/bucket/path、rest:http://host:8000/repo、b2:bucket:path、sftp:user@host:/repo）。シークレットは暗号化して保存され、再表示されません。",
   "cloud.secretSet": "保存済み — 維持する場合は空欄",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "設定を保存",
 
   "integrity.title": "整合性",

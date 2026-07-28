@@ -346,6 +346,8 @@ const el: Partial<Translations> = {
   "cloud.title": "Διαπιστευτήρια cloud (S3 / restic REST)",
   "cloud.hint": "Διαπιστευτήρια για απομακρυσμένα backend του restic, χωρίς rclone. Μετά την αποθήκευση, ορίστε μια διαδρομή αντιγράφου σε απομακρυσμένο repo, π.χ. s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path ή sftp:user@host:/repo. Τα μυστικά αποθηκεύονται κρυπτογραφημένα και δεν εμφανίζονται ξανά.",
   "cloud.secretSet": "αποθηκεύτηκε — αφήστε κενό για διατήρηση",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "Αποθήκευση διαμόρφωσης",
 
   // Integrity (restic check)

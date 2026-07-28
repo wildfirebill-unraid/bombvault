@@ -1845,7 +1845,7 @@ func (s *Service) replicateGithubTarget(ctx context.Context, domain string, sett
 	if cerr != nil {
 		return fmt.Errorf("create staging dir: %w", cerr)
 	}
-	defer os.RemoveAll(tmp)
+	defer func() { _ = os.RemoveAll(tmp) }()
 	for _, src := range srcs {
 		base := filepath.Base(src)
 		dst := filepath.Join(tmp, base)

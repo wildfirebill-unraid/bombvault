@@ -374,9 +374,10 @@ export function Sidebar({ settings }: SidebarProps) {
 
   // Clear any pending timers on unmount.
   useEffect(() => {
+    const seq = seqRef.current;
     return () => {
       if (holdRef.current !== null) window.clearTimeout(holdRef.current);
-      for (const id of seqRef.current) window.clearTimeout(id);
+      for (const id of seq) window.clearTimeout(id);
     };
   }, []);
 

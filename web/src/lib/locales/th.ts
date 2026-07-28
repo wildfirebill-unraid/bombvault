@@ -346,6 +346,8 @@ const th: Partial<Translations> = {
   "cloud.title": "ข้อมูลรับรองคลาวด์ (S3 / restic REST)",
   "cloud.hint": "ข้อมูลรับรองสำหรับแบ็กเอนด์ restic ระยะไกล โดยไม่ใช้ rclone หลังบันทึก ให้ตั้งค่าเส้นทางสำรองข้อมูลไปยังที่เก็บระยะไกล เช่น s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path หรือ sftp:user@host:/repo ความลับจะถูกเก็บแบบเข้ารหัสและจะไม่แสดงอีก",
   "cloud.secretSet": "บันทึกแล้ว — เว้นว่างเพื่อคงไว้",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "บันทึกการตั้งค่า",
 
   // Integrity (restic check)

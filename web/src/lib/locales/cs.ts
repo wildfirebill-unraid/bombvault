@@ -344,6 +344,8 @@ const cs: Partial<Translations> = {
   "cloud.title": "Přihlašovací údaje cloudu (S3 / restic REST)",
   "cloud.hint": "Údaje pro vzdálená restic úložiště, bez rclone. Po uložení nastav cestu zálohy na vzdálené repo, např. s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path nebo sftp:user@host:/repo. Tajné údaje se ukládají šifrovaně a už se nezobrazí.",
   "cloud.secretSet": "uloženo — ponech prázdné pro zachování",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "Uložit konfiguraci",
 
   // Integrity (restic check)

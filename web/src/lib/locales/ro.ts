@@ -344,6 +344,8 @@ const ro: Partial<Translations> = {
   "cloud.title": "Credențiale cloud (S3 / restic REST)",
   "cloud.hint": "Credențiale pentru backenduri restic la distanță, fără rclone. După salvare, setează o cale de backup către un repo la distanță, ex. s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path sau sftp:user@host:/repo. Secretele se stochează criptat și nu se mai afișează.",
   "cloud.secretSet": "salvat — lasă gol pentru a păstra",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "Salvează configurația",
 
   // Integrity (restic check)

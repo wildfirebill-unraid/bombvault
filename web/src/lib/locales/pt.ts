@@ -344,6 +344,8 @@ const pt: Partial<Translations> = {
   "cloud.title": "Credenciais da nuvem (S3 / restic REST)",
   "cloud.hint": "Credenciais para backends restic remotos, sem rclone. Após salvar, defina um caminho de backup para um repo remoto, ex. s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path ou sftp:user@host:/repo. Os segredos são armazenados criptografados e não são exibidos novamente.",
   "cloud.secretSet": "salvo — deixe em branco para manter",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "Guardar configuração",
 
   // Integrity (restic check)

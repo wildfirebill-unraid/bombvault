@@ -346,6 +346,8 @@ const hu: Partial<Translations> = {
   "cloud.title": "Felhő hitelesítő adatok (S3 / restic REST)",
   "cloud.hint": "Hitelesítő adatok távoli restic backendekhez, rclone nélkül. Mentés után állíts be egy biztonsági mentési útvonalat egy távoli repóra, pl. s3:s3.amazonaws.com/bucket/path, rest:http://host:8000/repo, b2:bucket:path vagy sftp:user@host:/repo. A titkok titkosítva tárolódnak és többé nem jelennek meg.",
   "cloud.secretSet": "elmentve — hagyd üresen a megtartáshoz",
+  "github.hint": "Git credentials to push file-level backup data to a private GitHub repo. After saving, set a Backup Path to \"github:owner/repo\" to send that domain via git.",
+  "github.pathHint": "Only file-level domains (config, files, flash) support git-based off-site; VM/container images exceed GitHub repo limits.",
   "rclone.save": "Konfiguráció mentése",
 
   // Integrity (restic check)
