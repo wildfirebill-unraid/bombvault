@@ -1,16 +1,16 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/junkerderprovinz/bombvault/main/.github/assets/bombvault-banner-dark.png">
-    <img src="https://raw.githubusercontent.com/junkerderprovinz/bombvault/main/.github/assets/bombvault-banner.png" alt="BombVault" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/wildfirebill-unraid/bombvault/main/.github/assets/bombvault-banner-dark.png">
+    <img src="https://raw.githubusercontent.com/wildfirebill-unraid/bombvault/main/.github/assets/bombvault-banner.png" alt="BombVault" width="100%">
   </picture>
 </p>
 
 <p align="center">
-  <a href="https://github.com/junkerderprovinz/bombvault/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/junkerderprovinz/bombvault/build.yml?branch=main&label=Build&style=for-the-badge&logo=githubactions&logoColor=white" alt="Build" height="36"></a>&nbsp;
-  <a href="https://github.com/junkerderprovinz/bombvault/actions/workflows/lint.yml"><img src="https://img.shields.io/github/actions/workflow/status/junkerderprovinz/bombvault/lint.yml?branch=main&label=Lint&style=for-the-badge&logo=githubactions&logoColor=white" alt="Lint" height="36"></a>&nbsp;
-  <a href="https://hub.docker.com/r/junkerderprovinz/bombvault"><img src="https://img.shields.io/docker/pulls/junkerderprovinz/bombvault?style=for-the-badge&logo=docker&logoColor=white&label=Pulls&color=1d99f3" alt="Docker Pulls" height="36"></a>&nbsp;
-  <a href="https://hub.docker.com/r/junkerderprovinz/bombvault"><img src="https://img.shields.io/docker/image-size/junkerderprovinz/bombvault/latest?style=for-the-badge&logo=docker&logoColor=white&label=Size&color=1d99f3" alt="Image Size" height="36"></a>&nbsp;
-  <a href="https://github.com/junkerderprovinz/bombvault/pkgs/container/bombvault"><img src="https://img.shields.io/badge/Arch-amd64%20%7C%20arm64-success?style=for-the-badge&logo=linux&logoColor=white" alt="Arch" height="36"></a>&nbsp;
+  <a href="https://github.com/wildfirebill-unraid/bombvault/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/wildfirebill-unraid/bombvault/build.yml?branch=main&label=Build&style=for-the-badge&logo=githubactions&logoColor=white" alt="Build" height="36"></a>&nbsp;
+  <a href="https://github.com/wildfirebill-unraid/bombvault/actions/workflows/lint.yml"><img src="https://img.shields.io/github/actions/workflow/status/wildfirebill-unraid/bombvault/lint.yml?branch=main&label=Lint&style=for-the-badge&logo=githubactions&logoColor=white" alt="Lint" height="36"></a>&nbsp;
+  <a href="https://hub.docker.com/r/wildfirebill-unraid/bombvault"><img src="https://img.shields.io/docker/pulls/wildfirebill-unraid/bombvault?style=for-the-badge&logo=docker&logoColor=white&label=Pulls&color=1d99f3" alt="Docker Pulls" height="36"></a>&nbsp;
+  <a href="https://hub.docker.com/r/wildfirebill-unraid/bombvault"><img src="https://img.shields.io/docker/image-size/wildfirebill-unraid/bombvault/latest?style=for-the-badge&logo=docker&logoColor=white&label=Size&color=1d99f3" alt="Image Size" height="36"></a>&nbsp;
+  <a href="https://github.com/wildfirebill-unraid/bombvault/pkgs/container/bombvault"><img src="https://img.shields.io/badge/Arch-amd64%20%7C%20arm64-success?style=for-the-badge&logo=linux&logoColor=white" alt="Arch" height="36"></a>&nbsp;
   <a href="https://restic.net"><img src="https://img.shields.io/badge/Engine-restic-CE4844?style=for-the-badge&logoColor=white" alt="restic" height="36"></a>&nbsp;
   <a href="https://unraid.net"><img src="https://img.shields.io/badge/Unraid-Template-f15a2c?style=for-the-badge&logo=unraid&logoColor=white" alt="Unraid" height="36"></a>&nbsp;
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="License" height="36"></a>
@@ -77,28 +77,28 @@ The core idea — one-click backup *and* automatic re-install of Docker containe
 ## 2. Screenshots
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/junkerderprovinz/bombvault/main/.github/assets/screenshots/dashboard.png" alt="BombVault Dashboard — health summary, protection status per domain, run history and backup-health heatmap" width="90%">
+  <img src="https://raw.githubusercontent.com/wildfirebill-unraid/bombvault/main/.github/assets/screenshots/dashboard.png" alt="BombVault Dashboard — health summary, protection status per domain, run history and backup-health heatmap" width="90%">
   <br><em>Dashboard — a compact health summary (overall status, next backup, last result) above protection status per domain, last backups, run history and a backup-health heatmap.</em>
 </p>
 
 <br>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/junkerderprovinz/bombvault/main/.github/assets/screenshots/recovery.png" alt="BombVault Recovery — guided disaster-recovery flow onto a fresh install" width="90%">
+  <img src="https://raw.githubusercontent.com/wildfirebill-unraid/bombvault/main/.github/assets/screenshots/recovery.png" alt="BombVault Recovery — guided disaster-recovery flow onto a fresh install" width="90%">
   <br><em>Recovery — a guided disaster-recovery flow: confirm your backups are readable, restore BombVault's own settings, then attach and restore your container, VM and flash backups onto a fresh install.</em>
 </p>
 
 <br>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/junkerderprovinz/bombvault/main/.github/assets/screenshots/containers.png" alt="BombVault Containers tab — per-container backup with schedule toggle, filters and bulk include/exclude" width="90%">
+  <img src="https://raw.githubusercontent.com/wildfirebill-unraid/bombvault/main/.github/assets/screenshots/containers.png" alt="BombVault Containers tab — per-container backup with schedule toggle, filters and bulk include/exclude" width="90%">
   <br><em>Containers — per-container backup with an include-in-schedule toggle, collapsible filters, bulk include/exclude, one-click backup and an expandable per-container history.</em>
 </p>
 
 <br>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/junkerderprovinz/bombvault/main/.github/assets/screenshots/settings.png" alt="BombVault Settings — tabbed configuration for domains, paths, schedules, off-site, notifications and integrity" width="90%">
+  <img src="https://raw.githubusercontent.com/wildfirebill-unraid/bombvault/main/.github/assets/screenshots/settings.png" alt="BombVault Settings — tabbed configuration for domains, paths, schedules, off-site, notifications and integrity" width="90%">
   <br><em>Settings — organised into tabs (General · Paths &amp; Storage · Schedules · Off-site · Notifications · Integrity · System); enable each backup domain and pick an accent colour.</em>
 </p>
 
@@ -281,7 +281,7 @@ Or add the template manually:
 
 1. In Unraid, go to **Docker → Add Container → Template repositories** and add:
    ```
-   https://github.com/junkerderprovinz/unraid-apps
+   https://github.com/wildfirebill-unraid/unraid-apps
    ```
 2. Search for **BombVault** in Templates.
 3. Set the required variables (see [Configuration](#8-configuration)) and click **Apply**.
@@ -330,7 +330,7 @@ Real Docker, libvirt and Unraid behavior cannot be tested in CI (no KVM, no Unra
 
 ## 10. Support this project
 
-Questions, bugs, ideas? **[Unraid support thread →](https://forums.unraid.net/topic/199509-support-junkerderprovinz-bombvault/)** (or open a [GitHub issue](https://github.com/junkerderprovinz/bombvault/issues)).
+Questions, bugs, ideas? **[Unraid support thread →](https://forums.unraid.net/topic/199509-support-junkerderprovinz-bombvault/)** (or open a [GitHub issue](https://github.com/wildfirebill-unraid/bombvault/issues)).
 
 <a href="https://buymeacoffee.com/junkerderprovinz">
   <img src="https://raw.githubusercontent.com/junkerderprovinz/bombvault/main/.github/assets/button-buy-me-a-coffee.svg" alt="Buy me a coffee" height="40">
@@ -343,3 +343,9 @@ Questions, bugs, ideas? **[Unraid support thread →](https://forums.unraid.net/
 - **[VolumeVault](https://github.com/Darkdragon14/VolumeVault)** by [@Darkdragon14](https://github.com/Darkdragon14) (Apache-2.0) — the original idea that sparked BombVault: one-click backup and automatic re-install of Docker containers. Thank you. BombVault is an independent rewrite (Go + restic) that extends the concept to VMs and the Unraid flash.
 - **[restic](https://restic.net/)** — the fast, secure, deduplicating backup engine BombVault orchestrates.
 - **[rclone](https://rclone.org/)** — off-site cloud backends.
+
+### Modifications by wildfirebill
+
+- **Multiple off-site destinations per domain** — each domain now supports newline-separated off-site URLs (restic and/or GitHub), allowing multiple backup targets for every domain.
+- **Credential-safe multi-target replication** — `copyToOffsite` iterates all targets; a failure on one never blocks the others.
+- **Multi-URL UI** — the Settings and Config pages show an add/remove list of off-site URLs instead of a single input.
