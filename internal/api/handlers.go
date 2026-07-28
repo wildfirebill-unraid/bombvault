@@ -1114,12 +1114,24 @@ func (h *Handler) handlePutSettings(w http.ResponseWriter, r *http.Request) {
 	// Validate each domain repo location: a remote backend (rclone:…/s3:…) is
 	// accepted verbatim; a local path must stay under the mount root.
 	// Local domain repos, plus any configured off-site repos (off-site may be
-	// blank = none). A remote backend (rclone:/s3:/rest:…) is accepted verbatim;
-	// a local path must stay under the mount root.
-	for _, sub := range []string{
+	// blank = none). Off-site fields may contain multiple URLs separated by
+	// newlines — each line is validated independently.
+	// A remote backend (rclone:/s3:/rest:…) is accepted verbatim; a local path
+	// must stay under the mount root.
+	var pathsToValidate []string
+	pathsToValidate = append(pathsToValidate,
 		v.ContainersPath, v.VMsPath, v.FlashPath, v.ConfigPath, v.FilesPath, v.RestoreFolder,
+	)
+	for _, off := range []string{
 		v.ContainersOffsite, v.VMsOffsite, v.FlashOffsite, v.ConfigOffsite, v.FilesOffsite,
 	} {
+		for _, line := range strings.Split(off, "\n") {
+			if trimmed := strings.TrimSpace(line); trimmed != "" {
+				pathsToValidate = append(pathsToValidate, trimmed)
+			}
+		}
+	}
+	for _, sub := range pathsToValidate {
 		if sub == "" || restic.IsRemoteRepo(sub) {
 			continue
 		}
@@ -1309,6 +1321,7 @@ func (h *Handler) handlePutSettings(w http.ResponseWriter, r *http.Request) {
 		RcloneConf:                  existing.RcloneConf,
 		NotifyConf:                  existing.NotifyConf,
 		CloudConf:                   existing.CloudConf,
+		GithubConf:                  existing.GithubConf,
 		RegistryAuths:               registryAuths,
 	}
 	if err := h.store.UpdateSettings(s); err != nil {
@@ -1726,6 +1739,39 @@ func (h *Handler) handleSetCloud(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.SetCloudCreds(c); err != nil {
+		writeJSON(w, http.StatusOK, failEnvelope(err))
+		return
+	}
+	writeJSON(w, http.StatusOK, okEnvelope(nil))
+}
+
+// handleGetGithub returns the stored GitHub credentials (secrets blanked).
+// GET /api/github
+func (h *Handler) handleGetGithub(w http.ResponseWriter, _ *http.Request) {
+	c, err := h.svc.GithubConfig()
+	if err != nil {
+		writeJSON(w, http.StatusOK, failEnvelope(err))
+		return
+	}
+	writeJSON(w, http.StatusOK, okEnvelope(map[string]any{
+		"user":     c.User,
+		"email":    c.Email,
+		"tokenSet": c.Token != "",
+	}))
+}
+
+// handleSetGithub stores the GitHub credentials (encrypted). A blank token
+// keeps the previously stored one. POST /api/github
+func (h *Handler) handleSetGithub(w http.ResponseWriter, r *http.Request) {
+	var c struct {
+		Token string `json:"token"`
+		User  string `json:"user"`
+		Email string `json:"email"`
+	}
+	if !decodeBody(w, r, &c) {
+		return
+	}
+	if err := h.svc.SetGithubConf(GithubCreds{Token: c.Token, User: c.User, Email: c.Email}); err != nil {
 		writeJSON(w, http.StatusOK, failEnvelope(err))
 		return
 	}

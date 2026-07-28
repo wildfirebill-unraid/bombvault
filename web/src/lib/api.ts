@@ -760,6 +760,26 @@ export function setCloud(c: CloudCreds): Promise<OkEnvelope> {
   return fetchJSON("/api/cloud", { method: "POST", body: JSON.stringify(c) });
 }
 
+/** GET /api/github — GitHub credential summary (no secret returned). */
+export interface GithubInfo extends OkEnvelope {
+  user?: string;
+  email?: string;
+  tokenSet?: boolean;
+}
+export function getGithub(): Promise<GithubInfo> {
+  return fetchJSON("/api/github");
+}
+
+/** POST /api/github — store GitHub credentials (encrypted). Blank token = keep. */
+export interface GithubCreds {
+  token: string;
+  user: string;
+  email: string;
+}
+export function setGithub(c: GithubCreds): Promise<OkEnvelope> {
+  return fetchJSON("/api/github", { method: "POST", body: JSON.stringify(c) });
+}
+
 /** POST /api/notify/test — send a test notification using the given config. */
 export function testNotify(cfg: NotifyConfig): Promise<OkEnvelope> {
   return fetchJSON("/api/notify/test", { method: "POST", body: JSON.stringify(cfg) });

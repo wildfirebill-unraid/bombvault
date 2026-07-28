@@ -608,6 +608,12 @@ ALTER TABLE settings ADD COLUMN digest_schedule TEXT NOT NULL DEFAULT 'weekly Mo
   last_success_at INTEGER NOT NULL
 );`,
 	},
+	{
+		// Encrypted GitHub PAT + user/email for off-site backups pushed directly
+		// to a private GitHub repo (the "github:" URL scheme). Empty = none.
+		version: 74, name: "settings_github_conf",
+		sql: "ALTER TABLE settings ADD COLUMN github_conf TEXT NOT NULL DEFAULT '';",
+	},
 }
 
 // Migrate applies any pending forward-only migrations to db.

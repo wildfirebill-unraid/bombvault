@@ -134,6 +134,8 @@ func (h *Handler) Router() http.Handler {
 	mux.HandleFunc("POST /api/rclone", h.handleSetRclone)
 	mux.HandleFunc("GET /api/cloud", h.handleGetCloud)
 	mux.HandleFunc("POST /api/cloud", h.handleSetCloud)
+	mux.HandleFunc("GET /api/github", h.handleGetGithub)
+	mux.HandleFunc("POST /api/github", h.handleSetGithub)
 	mux.HandleFunc("GET /api/notify", h.handleGetNotify)
 	mux.HandleFunc("POST /api/notify", h.handleSetNotify)
 	mux.HandleFunc("POST /api/notify/test", h.handleTestNotify)

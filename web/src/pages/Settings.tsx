@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSettings, putSettings, getAuth, setAuthPassword, logout, logoutAll, getVMSSH, testVMSSH, getRclone, setRclone, getCloud, setCloud, checkDomain, unlockDomain, pruneDomain, replicateOffsite, testOffsite, tamperTest, getStatus, getNotify, setNotify, testNotify, runDrill, getDrills, listContainers, listFileSets, patchFileSet, downloadRecoveryKit, getHealth, generateWidgetToken, disableWidgetToken, getDashboardPlugin, installDashboardPlugin, removeDashboardPlugin } from "../lib/api";
+import { getSettings, putSettings, getAuth, setAuthPassword, logout, logoutAll, getVMSSH, testVMSSH, getRclone, setRclone, getCloud, setCloud, getGithub, setGithub, checkDomain, unlockDomain, pruneDomain, replicateOffsite, testOffsite, tamperTest, getStatus, getNotify, setNotify, testNotify, runDrill, getDrills, listContainers, listFileSets, patchFileSet, downloadRecoveryKit, getHealth, generateWidgetToken, disableWidgetToken, getDashboardPlugin, installDashboardPlugin, removeDashboardPlugin } from "../lib/api";
 import { SourceToggle, type RepoSource } from "../components/SourceToggle";
 import { FolderBrowser } from "../components/FolderBrowser";
 import { OffsiteWizard } from "../components/OffsiteWizard";
@@ -794,6 +794,81 @@ export function CloudCard({ t }: { t: ReturnType<typeof useT>["t"] }) {
           <input type="password" value={c.restPassword} onChange={(e) => set("restPassword", e.target.value)} spellCheck={false}
             placeholder={pwSet ? t("cloud.secretSet") : ""} className={inputCls} /></label>
       </div>
+
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          onClick={() => void handleSave()}
+          disabled={state === "saving"}
+          className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-1.5 text-sm font-medium text-accentContrast hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {state === "saving" ? t("auth.saving") : t("settings.save")}
+        </button>
+        {state === "saved" && <span className="text-sm text-statusOk">{t("settings.saved")}</span>}
+        {state === "error" && msg && <span className="text-sm text-statusFail">{msg}</span>}
+      </div>
+    </Card>
+  );
+}
+
+// GithubCard stores the git user/email + PAT for GitHub off-site pushes ("github:owner/repo"
+// offsite URL). Stored encrypted; token is write-only (blank on load, blank-on-save keeps).
+export function GithubCard({ t }: { t: ReturnType<typeof useT>["t"] }) {
+  const [c, setC] = useState({ token: "", user: "", email: "" });
+  const [tokenSet, setTokenSet] = useState(false);
+  const [state, setState] = useState<SaveState>("idle");
+  const [msg, setMsg] = useState<string | null>(null);
+
+  function refresh() {
+    getGithub()
+      .then((r) => {
+        if (r.ok) {
+          setC((p) => ({ ...p, user: r.user ?? "", email: r.email ?? "" }));
+          setTokenSet(!!r.tokenSet);
+        }
+      })
+      .catch(() => undefined);
+  }
+  useEffect(refresh, []);
+
+  async function handleSave() {
+    setState("saving");
+    setMsg(null);
+    try {
+      const r = await setGithub(c);
+      if (r.ok) {
+        setState("saved");
+        setC((p) => ({ ...p, token: "" }));
+        refresh();
+        setTimeout(() => setState("idle"), 3000);
+      } else {
+        setState("error");
+        setMsg(r.error ?? t("settings.error"));
+      }
+    } catch (err) {
+      setState("error");
+      setMsg(err instanceof Error ? err.message : t("settings.error"));
+    }
+  }
+
+  const inputCls =
+    "rounded-lg bg-carbon-surface3 text-carbon-text text-sm font-mono px-3 py-1.5 focus:outline-solid focus:outline-2 focus:outline-statusInfoSolid";
+  const fieldCls = "flex flex-col gap-1 text-xs font-mono text-carbon-textSub";
+
+  return (
+    <Card title="GitHub">
+      <p className="text-xs text-carbon-textMuted -mt-1">{t("github.hint")}</p>
+
+      <div className="flex flex-col gap-2 rounded-lg bg-carbon-surface2 p-3">
+        <label className={fieldCls}>GitHub User
+          <input value={c.user} onChange={(e) => setC((p) => ({ ...p, user: e.target.value }))} spellCheck={false} className={inputCls} /></label>
+        <label className={fieldCls}>Git Email
+          <input value={c.email} onChange={(e) => setC((p) => ({ ...p, email: e.target.value }))} spellCheck={false} className={inputCls} /></label>
+        <label className={fieldCls}>Personal Access Token
+          <input type="password" value={c.token} onChange={(e) => setC((p) => ({ ...p, token: e.target.value }))} spellCheck={false}
+            placeholder={tokenSet ? t("cloud.secretSet") : ""} className={inputCls} /></label>
+      </div>
+
+      <p className="text-xs text-carbon-textMuted mt-2">{t("github.pathHint")}</p>
 
       <div className="flex items-center gap-3 pt-1">
         <button
@@ -2063,6 +2138,19 @@ type TabKey =
   | "integrity"
   | "system";
 
+// splitOffsiteUrls splits a newline-separated offsite string into an array
+// of URLs, returning at least one entry so the UI always shows an input row.
+function splitOffsiteUrls(s: string): string[] {
+  const parts = s.split("\n").map((l) => l.trim()).filter((l) => l !== "");
+  return parts.length === 0 ? [""] : parts;
+}
+
+// joinOffsiteUrls joins an array of URLs into a newline-separated string,
+// filtering out blank rows.
+function joinOffsiteUrls(urls: string[]): string {
+  return urls.filter((u) => u.trim() !== "").join("\n");
+}
+
 export function SettingsPage() {
   const { t } = useT();
   const { advanced } = useAdvanced();
@@ -3193,15 +3281,45 @@ export function SettingsPage() {
                 t={t}
               />
             ) : (
-              <input
-                value={settings[repoKey]}
-                spellCheck={false}
-                onChange={(e) =>
-                  setSettings((prev) => (prev ? { ...prev, [repoKey]: e.target.value } : prev))
-                }
-                placeholder="rest:http://host:8000/repo"
-                className="rounded-lg bg-carbon-surface2 px-3 py-2 text-sm text-carbon-text font-mono focus:outline-solid focus:outline-2 focus:outline-statusInfoSolid"
-              />
+              <>
+                {splitOffsiteUrls(settings[repoKey]).map((url, i) => (
+                  <div key={i} className="flex gap-1 items-center">
+                    <input
+                      value={url}
+                      spellCheck={false}
+                      onChange={(e) => {
+                        const urls = splitOffsiteUrls(settings[repoKey]);
+                        urls[i] = e.target.value;
+                        setSettings((prev) => (prev ? { ...prev, [repoKey]: joinOffsiteUrls(urls) } : prev));
+                      }}
+                      placeholder="rest:http://host:8000/repo"
+                      className="flex-1 rounded-lg bg-carbon-surface2 px-3 py-2 text-sm text-carbon-text font-mono focus:outline-solid focus:outline-2 focus:outline-statusInfoSolid"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const urls = splitOffsiteUrls(settings[repoKey]).filter((_, j) => j !== i);
+                        setSettings((prev) => (prev ? { ...prev, [repoKey]: joinOffsiteUrls(urls) } : prev));
+                      }}
+                      className="text-xs text-red-500 hover:text-red-400 px-1 py-1"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const urls = splitOffsiteUrls(settings[repoKey]);
+                    urls.push("");
+                    setSettings((prev) => (prev ? { ...prev, [repoKey]: joinOffsiteUrls(urls) } : prev));
+                  }}
+                  className="self-start text-xs text-carbon-textSub hover:text-carbon-text px-2 py-1"
+                >
+                  + Add another URL
+                </button>
+              </>
             )}
           </div>
           );
@@ -3471,6 +3589,8 @@ export function SettingsPage() {
       {tab === "offsite" && <Advanced><RcloneCard t={t} /></Advanced>}
 
       {tab === "offsite" && <Advanced><CloudCard t={t} /></Advanced>}
+
+      {tab === "offsite" && <Advanced><GithubCard t={t} /></Advanced>}
 
       {/* ------------------------------------------------------------------ */}
       {/* NOTIFICATIONS — NotifyCard (renders always; not re-gated).          */}

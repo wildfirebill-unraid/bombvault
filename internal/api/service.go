@@ -28,6 +28,7 @@ import (
 	"github.com/junkerderprovinz/bombvault/internal/backup"
 	"github.com/junkerderprovinz/bombvault/internal/config"
 	"github.com/junkerderprovinz/bombvault/internal/dockercli"
+	"github.com/junkerderprovinz/bombvault/internal/gitbackup"
 	"github.com/junkerderprovinz/bombvault/internal/model"
 	"github.com/junkerderprovinz/bombvault/internal/notify"
 	"github.com/junkerderprovinz/bombvault/internal/paths"
@@ -883,20 +884,43 @@ func (s *Service) notifyRetentionFailed(ctx context.Context, tag, detail string)
 	}
 }
 
-// offsiteRepoFor returns the configured off-site repo location for a domain, or
-// "" when none is set.
-func (s *Service) offsiteRepoFor(domain string, settings store.Settings) string {
+// offsiteReposFor returns all configured off-site repo locations for a domain,
+// split by newline. Empty lines are skipped. Backward compatible with single-URL
+// values (no newline → one-element slice).
+func (s *Service) offsiteReposFor(domain string, settings store.Settings) []string {
+	raw := ""
 	switch domain {
 	case "containers":
-		return settings.ContainersOffsite
+		raw = settings.ContainersOffsite
 	case "vms":
-		return settings.VMsOffsite
+		raw = settings.VMsOffsite
 	case "flash":
-		return settings.FlashOffsite
+		raw = settings.FlashOffsite
 	case "config":
-		return settings.ConfigOffsite
+		raw = settings.ConfigOffsite
 	case "files":
-		return settings.FilesOffsite
+		raw = settings.FilesOffsite
+	}
+	if raw == "" {
+		return nil
+	}
+	lines := strings.Split(raw, "\n")
+	out := make([]string, 0, len(lines))
+	for _, l := range lines {
+		l = strings.TrimSpace(l)
+		if l != "" {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// offsiteRepoFor returns the first configured off-site repo location for a
+// domain, or "" when none is set.
+func (s *Service) offsiteRepoFor(domain string, settings store.Settings) string {
+	repos := s.offsiteReposFor(domain, settings)
+	if len(repos) > 0 {
+		return repos[0]
 	}
 	return ""
 }
@@ -1669,16 +1693,16 @@ func (s *Service) CollectStatsOnStartup() {
 	}
 }
 
-// copyToOffsite replicates a domain's local repo to its off-site repo with
-// `restic copy` (the local repo stays primary). It creates the off-site repo on
-// first use and copies everything not already there (restic skips dupes, so the
-// first run seeds history and later runs ship just the new snapshot). Returns the
-// (scrubbed) error so on-demand/scheduled callers can surface it; it never logs
-// the off-site location, which can embed credentials. Lock-free — the caller
-// holds the domain lock.
+// copyToOffsite replicates a domain's local repo to all configured off-site repos
+// via `restic copy` (restic) or `git push` (github: scheme). It creates the
+// off-site repo on first use and copies everything not already there (restic
+// skips dupes, so the first run seeds history and later runs ship just the new
+// snapshot). Returns the (scrubbed) first error so on-demand/scheduled callers can
+// surface it; it never logs off-site locations, which can embed credentials.
+// Lock-free — the caller holds the domain lock.
 func (s *Service) copyToOffsite(ctx context.Context, domain string, settings store.Settings, mode restic.Mode, localRepo string) (err error) {
-	loc := s.offsiteRepoFor(domain, settings)
-	if loc == "" {
+	locs := s.offsiteReposFor(domain, settings)
+	if len(locs) == 0 {
 		return errors.New("no off-site repo configured for this domain")
 	}
 	// Persist this replication attempt to the off-site run history (begin now, close
@@ -1701,9 +1725,8 @@ func (s *Service) copyToOffsite(ctx context.Context, domain string, settings sto
 		log.Printf("api: offsite %s: could not start activity run (continuing): %v", domain, aErr) //nolint:gosec // G706: domain is a fixed literal
 		activityRunID = ""
 	}
-	// ok is set true ONLY on the explicit success return below, so an unwinding
-	// panic (named-return err still nil) can't stamp a phantom successful run — the
-	// deferred finish then records a failure, not a false success.
+	// ok is set true ONLY when every target succeeds. An unwinding panic (named-return
+	// err still nil) can't stamp a phantom successful run.
 	var ok bool
 	defer func() {
 		if activityRunID != "" {
@@ -1722,62 +1745,119 @@ func (s *Service) copyToOffsite(ctx context.Context, domain string, settings sto
 			log.Printf("api: offsite %s: could not finish replication run: %v", domain, ferr) //nolint:gosec // G706: domain is a fixed literal
 		}
 	}()
-	dest, rerr := s.resolveRepo(loc)
-	if rerr != nil {
-		return fmt.Errorf("resolve off-site repo: %w", rerr)
+
+	var firstErr error
+	var trackedDest string // first restic destination we track for stats/budget
+
+	for _, loc := range locs {
+		if isGithubOffsite(loc) {
+			if gerr := s.replicateGithubTarget(ctx, domain, settings, loc); gerr != nil {
+				log.Printf("api: offsite %s: github off-site target failed (continuing): %v", domain, gerr) //nolint:gosec // G706: domain is a fixed literal
+				if firstErr == nil {
+					firstErr = gerr
+				}
+			}
+			continue
+		}
+
+		// Restic off-site target.
+		dest, rerr := s.resolveRepo(loc)
+		if rerr != nil {
+			log.Printf("api: offsite %s: could not resolve off-site repo (continuing): %v", domain, rerr) //nolint:gosec // G706: domain is a fixed literal
+			if firstErr == nil {
+				firstErr = rerr
+			}
+			continue
+		}
+		if trackedDest == "" {
+			trackedDest = dest
+		}
+		s.progBegin(ctx, "offsite:"+domain, "replicate")
+		if err = s.EnsureRepo(ctx, dest, mode); err != nil {
+			log.Printf("api: offsite %s: could not initialise off-site repo (continuing): %v", domain, err) //nolint:gosec // G706: domain is a fixed literal
+			s.progEnd("offsite:"+domain, "replicate", false)
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+		s.unlockStale(ctx, dest, mode)
+		if err = s.engine.Copy(ctx, dest, localRepo, nil, s.offsiteLimits(settings), mode); err != nil {
+			log.Printf("api: offsite %s: copy to off-site target failed (continuing): %v", domain, err) //nolint:gosec // G706: domain is a fixed literal
+			s.progEnd("offsite:"+domain, "replicate", false)
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+		s.progEnd("offsite:"+domain, "replicate", true)
+
+		// Retention: best-effort, never fails the copy that already succeeded.
+		if offsiteImmutableFor(domain, settings) {
+			log.Printf("api: offsite %s: retention is enforced far-side (append-only)", domain) //nolint:gosec // G706: domain is a fixed literal
+		} else if op := s.offsiteRetentionPolicy(settings); op.Any() {
+			if perr := s.applyRetentionPerIdentity(ctx, dest, op, mode); perr != nil {
+				log.Printf("api: offsite %s: retention prune failed (replica is safe): %v", domain, perr) //nolint:gosec // G706: domain is a fixed literal
+			}
+		}
 	}
-	// Publish an active "off-site replication running" indicator for this domain so
-	// the UI shows WHICH domain is replicating. restic copy has no machine-readable
-	// progress, so this is active/indeterminate (no percent), not a filling bar.
+	// Stats and growth budget: track against the FIRST restic destination only.
+	// GitHub targets are not restic repos and can't be sampled this way.
+	if trackedDest != "" {
+		if settings.OffsiteGrowthBudgetGB > 0 {
+			if serr := s.CollectStats(ctx, domain, "offsite"); serr != nil {
+				log.Printf("api: offsite %s: budget size sample failed (replica is safe): %v", domain, serr) //nolint:gosec // G706: domain is a fixed literal
+			}
+		} else {
+			s.CollectStatsAsync(domain, "offsite")
+		}
+		s.checkOffsiteBudget(ctx, domain, settings)
+	}
+
+	ok = firstErr == nil
+	return firstErr
+}
+
+// replicateGithubTarget pushes the live source directories for a domain to a
+// single github: off-site destination.
+func (s *Service) replicateGithubTarget(ctx context.Context, domain string, settings store.Settings, loc string) (err error) {
 	s.progBegin(ctx, "offsite:"+domain, "replicate")
 	defer func() { s.progEnd("offsite:"+domain, "replicate", err == nil) }()
-	if err = s.EnsureRepo(ctx, dest, mode); err != nil {
-		return fmt.Errorf("ensure off-site repo: %w", err)
+	srcs, gerr := s.githubSourcePaths(ctx, domain, settings)
+	if gerr != nil {
+		return fmt.Errorf("resolve source paths for %s: %w", domain, gerr)
 	}
-	// Clear any stale lock a previously interrupted off-site op (replication copy /
-	// integrity check) left on the destination repo, so restic copy can take its
-	// lock instead of failing with "repository is already locked". BombVault is the
-	// sole writer, so an existing off-site lock is always stale — this self-heals the
-	// off-site repo on the next run (defence-in-depth for bug #29).
-	s.unlockStale(ctx, dest, mode)
-	// Cap the transfer rate so off-site replication doesn't saturate the WAN
-	// (zero limits = unlimited, the default).
-	if err = s.engine.Copy(ctx, dest, localRepo, nil, s.offsiteLimits(settings), mode); err != nil {
-		return err
+	if len(srcs) == 0 {
+		return fmt.Errorf("no source paths found for domain %q", domain)
 	}
-	// Apply the off-site retention policy (separate from local) after a successful
-	// copy — only when one is set, so an off-site repo defaults to keep-everything
-	// (archive) and existing setups are unchanged. Best-effort: a prune failure
-	// must not fail the replication that already succeeded. An IMMUTABLE
-	// (append-only) off-site repo is never pruned from here: the far side would
-	// refuse the delete anyway, and retention is enforced far-side by design.
-	if offsiteImmutableFor(domain, settings) {
-		log.Printf("api: offsite %s: retention is enforced far-side (append-only)", domain) //nolint:gosec // G706: domain is a fixed literal
-	} else if op := s.offsiteRetentionPolicy(settings); op.Any() {
-		// Per-identity: one tag-scoped, ungrouped forget per item, one prune —
-		// identity-stable like the local retention (issue #91).
-		if perr := s.applyRetentionPerIdentity(ctx, dest, op, mode); perr != nil {
-			log.Printf("api: offsite %s: retention prune failed (replica is safe): %v", domain, perr) //nolint:gosec // G706: domain is a fixed literal
+	owner, repo, perr := gitbackup.ParseRepo(loc)
+	if perr != nil {
+		return perr
+	}
+	gh, derr := s.decodeGithub(settings)
+	if derr != nil {
+		return fmt.Errorf("decode github conf: %w", derr)
+	}
+	if gh.Token == "" || gh.User == "" || gh.Email == "" {
+		return errors.New("github credentials not configured")
+	}
+	tmp, cerr := os.MkdirTemp("", "bombvault-github-*")
+	if cerr != nil {
+		return fmt.Errorf("create staging dir: %w", cerr)
+	}
+	defer os.RemoveAll(tmp)
+	for _, src := range srcs {
+		base := filepath.Base(src)
+		dst := filepath.Join(tmp, base)
+		if cerr := gitbackup.CopyDir(src, dst); cerr != nil {
+			return fmt.Errorf("copy %s: %w", base, cerr)
 		}
 	}
-	// Sample the off-site repo size into the repo_stats time series and evaluate the
-	// growth budget. When a budget is set we sample SYNCHRONOUSLY first so the check
-	// sees THIS replication's fresh size — including the very first replication,
-	// which has no prior sample — rather than a stale one; for an immutable repo
-	// (no far-side prune) the budget is the only growth backstop, so it must not lag
-	// or miss the seed. Without a budget we sample in the background (throttled) just
-	// for the Storage card. The REST protocol can't see the far side's free space —
-	// only BombVault's own growth — so the budget is a detection aid, not a hard cap.
-	if settings.OffsiteGrowthBudgetGB > 0 {
-		if serr := s.CollectStats(ctx, domain, "offsite"); serr != nil {
-			log.Printf("api: offsite %s: budget size sample failed (replica is safe): %v", domain, serr) //nolint:gosec // G706: domain is a fixed literal
-		}
-	} else {
-		s.CollectStatsAsync(domain, "offsite")
-	}
-	s.checkOffsiteBudget(ctx, domain, settings)
-	ok = true
-	return nil
+	return gitbackup.PushBackup(ctx, gitbackup.Config{
+		Token: gh.Token,
+		User:  gh.User,
+		Email: gh.Email,
+	}, owner, repo, domain, tmp)
 }
 
 // checkOffsiteBudget compares the latest sampled off-site repo size for a domain
@@ -2017,51 +2097,63 @@ func (s *Service) notifyReplicationFailed(ctx context.Context, domain, detail st
 	}
 }
 
-// TestOffsite probes a domain's off-site repo without modifying it, so the UI can
-// tell the user whether the configured location is a reachable, initialised restic
-// repository BEFORE relying on it. It uses the SAME probe EnsureRepo uses to detect
-// an existing repo — `restic cat config` (ResticEngine.RepoOpens) — trying both
-// encryption modes, so a repo created under the opposite Encryption setting still
-// counts as initialised (that mode mismatch is reported by EnsureRepo, not here).
+// TestOffsite probes a domain's off-site repos without modifying them, so the UI
+// can tell the user whether at least one configured location is a reachable,
+// initialised restic repository BEFORE relying on it. It uses the SAME probe
+// EnsureRepo uses to detect an existing repo — `restic cat config`
+// (ResticEngine.RepoOpens) — trying both encryption modes, so a repo created
+// under the opposite Encryption setting still counts as initialised (that mode
+// mismatch is reported by EnsureRepo, not here).
 //
-// reachable reports the repo could be opened at all; initialized that it is a real
-// restic repository. `cat config` cannot distinguish an unreachable backend from a
-// reachable-but-empty location (both simply fail to open), so a repo that opens in
-// neither mode is reported as neither reachable nor initialised. An unconfigured
-// off-site repo for the domain is an error, not a verdict.
+// When multiple off-site targets are configured, this returns the result of the
+// FIRST reachable target. GitHub targets are probed via git access.
 func (s *Service) TestOffsite(ctx context.Context, domain string) (reachable, initialized bool, err error) {
 	settings, err := s.store.GetSettings()
 	if err != nil {
 		return false, false, fmt.Errorf("read settings: %w", err)
 	}
-	loc := s.offsiteRepoFor(domain, settings)
-	if loc == "" {
+	locs := s.offsiteReposFor(domain, settings)
+	if len(locs) == 0 {
 		return false, false, errors.New("no off-site repo configured for this domain")
 	}
-	repo, err := s.resolveRepo(loc)
-	if err != nil {
-		return false, false, err
-	}
-	// Bound each probe so a dead backend fails fast instead of hanging the
-	// request (cat config over an unreachable REST server can otherwise stall).
-	// PER attempt, not shared: a cold sftp connection over a VPN (Tailscale
-	// tunnel + host-key pinning) can eat a shared budget on the first try and
-	// leave the second probe zero time — reporting a reachable repo as
-	// unreachable (#93).
-	probe := func(m restic.Mode) bool {
-		pctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-		defer cancel()
-		return s.engine.RepoOpens(pctx, repo, m)
-	}
 	mode := s.ModeFor(settings)
-	if probe(mode) {
-		return true, true, nil
+	probeRepo := func(repo string) bool {
+		for _, m := range []restic.Mode{mode, s.oppositeMode(mode)} {
+			pctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			ok := s.engine.RepoOpens(pctx, repo, m)
+			cancel()
+			if ok {
+				return true
+			}
+		}
+		return false
 	}
-	// Opens under the opposite encryption mode → the repo exists and is reachable,
-	// just created under the other Encryption setting; still reachable + initialised
-	// for this probe (EnsureRepo surfaces the mismatch on the next backup).
-	if probe(s.oppositeMode(mode)) {
-		return true, true, nil
+
+	var firstErr error
+	for _, loc := range locs {
+		if isGithubOffsite(loc) {
+			r, init, gerr := s.gitHubTestOffsite(ctx, loc)
+			if gerr == nil {
+				return r, init, nil
+			}
+			if firstErr == nil {
+				firstErr = gerr
+			}
+			continue
+		}
+		repo, rerr := s.resolveRepo(loc)
+		if rerr != nil {
+			if firstErr == nil {
+				firstErr = rerr
+			}
+			continue
+		}
+		if probeRepo(repo) {
+			return true, true, nil
+		}
+	}
+	if firstErr != nil {
+		return false, false, firstErr
 	}
 	return false, false, nil
 }
@@ -8028,6 +8120,150 @@ func (s *Service) SetCloudCreds(c CloudCreds) error {
 	}
 	settings.CloudConf = base64.StdEncoding.EncodeToString(enc)
 	return s.store.UpdateSettings(settings)
+}
+
+// ---------------------------------------------------------------------------
+// GitHub credentials (token + user/email) for off-site git-based repos
+// ---------------------------------------------------------------------------
+
+// GithubCreds holds the credentials for pushing backups to a private GitHub
+// repo. Stored AES-256-GCM-encrypted in settings.github_conf.
+type GithubCreds struct {
+	Token string `json:"token"`
+	User  string `json:"user"`
+	Email string `json:"email"`
+}
+
+// decodeGithub decrypts the stored GitHub credentials. Empty/blank = zero
+// config, no error.
+func (s *Service) decodeGithub(settings store.Settings) (GithubCreds, error) {
+	var c GithubCreds
+	if strings.TrimSpace(settings.GithubConf) == "" {
+		return c, nil
+	}
+	enc, err := base64.StdEncoding.DecodeString(settings.GithubConf)
+	if err != nil {
+		return c, err
+	}
+	plain, err := secret.Decrypt(s.cfg.AppKey, enc)
+	if err != nil {
+		return c, err
+	}
+	if err := json.Unmarshal(plain, &c); err != nil {
+		return c, err
+	}
+	return c, nil
+}
+
+// GithubConfig returns the stored GitHub credentials.
+func (s *Service) GithubConfig() (GithubCreds, error) {
+	settings, err := s.store.GetSettings()
+	if err != nil {
+		return GithubCreds{}, err
+	}
+	return s.decodeGithub(settings)
+}
+
+// SetGithubConf stores the GitHub credentials encrypted. A blank token KEEPS
+// the previously stored token. A fully-blank config clears it.
+func (s *Service) SetGithubConf(c GithubCreds) error {
+	settings, err := s.store.GetSettings()
+	if err != nil {
+		return err
+	}
+	if (GithubCreds{}) == c {
+		settings.GithubConf = ""
+		return s.store.UpdateSettings(settings)
+	}
+	prev, _ := s.decodeGithub(settings)
+	if c.Token == "" {
+		c.Token = prev.Token
+	}
+	blob, mErr := json.Marshal(c)
+	if mErr != nil {
+		return fmt.Errorf("marshal github conf: %w", mErr)
+	}
+	enc, eErr := secret.Encrypt(s.cfg.AppKey, blob)
+	if eErr != nil {
+		return fmt.Errorf("encrypt github conf: %w", eErr)
+	}
+	settings.GithubConf = base64.StdEncoding.EncodeToString(enc)
+	return s.store.UpdateSettings(settings)
+}
+
+// isGithubOffsite reports whether a repo location uses the github: scheme.
+func isGithubOffsite(loc string) bool {
+	return strings.HasPrefix(loc, "github:")
+}
+
+// githubSourcePaths returns the LIVE source directories for a domain, to be
+// pushed directly to GitHub (no restic restore involved).
+func (s *Service) githubSourcePaths(ctx context.Context, domain string, settings store.Settings) ([]string, error) {
+	switch domain {
+	case "flash":
+		return []string{s.cfg.FlashDir}, nil
+	case "config":
+		return nil, errors.New("config domain does not support git-based off-site (use restic off-site instead)")
+	case "files":
+		sets, err := s.store.ListFileSets()
+		if err != nil {
+			return nil, fmt.Errorf("list file sets: %w", err)
+		}
+		var out []string
+		for _, set := range sets {
+			p, err := paths.Resolve(s.cfg.HostMountRoot, set.Path)
+			if err != nil {
+				continue
+			}
+			out = append(out, p)
+		}
+		return out, nil
+	case "containers":
+		targets, err := s.store.ListTargets()
+		if err != nil {
+			return nil, fmt.Errorf("list container targets: %w", err)
+		}
+		var out []string
+		for _, tgt := range targets {
+			paths := tgt.AppdataPaths
+			if len(tgt.SelectedPaths) > 0 {
+				paths = tgt.SelectedPaths
+			}
+			out = append(out, paths...)
+		}
+		return out, nil
+	default:
+		return nil, fmt.Errorf("unsupported domain %q for git-based off-site", domain)
+	}
+}
+
+// gitHubTestOffsite probes a github: repo URL for reachability using the
+// stored credentials.
+func (s *Service) gitHubTestOffsite(_ context.Context, loc string) (bool, bool, error) {
+	owner, repo, err := gitbackup.ParseRepo(loc)
+	if err != nil {
+		return false, false, err
+	}
+	settings, err := s.store.GetSettings()
+	if err != nil {
+		return false, false, err
+	}
+	gh, err := s.decodeGithub(settings)
+	if err != nil {
+		return false, false, err
+	}
+	if gh.Token == "" {
+		return false, false, errors.New("github token not configured")
+	}
+
+	// Create a fresh context with a short timeout so a hang doesn't block the UI.
+	probeCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := gitbackup.TestAccess(probeCtx, gitbackup.Config{Token: gh.Token}, owner, repo); err != nil {
+		return false, false, err
+	}
+	return true, true, nil
 }
 
 // ---------------------------------------------------------------------------

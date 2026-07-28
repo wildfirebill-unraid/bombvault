@@ -90,6 +90,15 @@ function ConfigBackupButton({
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
+function configOffsiteUrls(s: string): string[] {
+  const parts = s.split("\n").map((l) => l.trim()).filter((l) => l !== "");
+  return parts.length === 0 ? [""] : parts;
+}
+
+function joinOffsiteUrls(urls: string[]): string {
+  return urls.filter((u) => u.trim() !== "").join("\n");
+}
+
 function labelledInput(
   label: string,
   value: string,
@@ -188,14 +197,51 @@ function ConfigSettingsCard({
       )}
 
       {/* The self-backup + off-site cadences moved to Settings › Schedules (the
-          single schedule owner). Only path / off-site repo / immutable live here. */}
-      {labelledInput(
-        t("config.offsite"),
-        settings.configOffsite,
-        (v) => setSettings((prev) => ({ ...prev, configOffsite: v })),
-        "rest:http://host:8000/repo",
-        t("config.offsiteHint")
-      )}
+          single schedule owner). Only path / off-site repos / immutable live here.
+          Off-site supports multiple URLs separated by newlines. */}
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-carbon-textSub">{t("config.offsite")}</span>
+        {configOffsiteUrls(settings.configOffsite).map((url, i) => (
+          <div key={i} className="flex gap-1 items-center">
+            <input
+              value={url}
+              spellCheck={false}
+              onChange={(e) => {
+                const urls = configOffsiteUrls(settings.configOffsite);
+                urls[i] = e.target.value;
+                setSettings((prev) => ({ ...prev, configOffsite: joinOffsiteUrls(urls) }));
+              }}
+              placeholder="rest:http://host:8000/repo"
+              className="flex-1 rounded-lg bg-carbon-surface2 px-3 py-2 text-sm text-carbon-text font-mono focus:outline-solid focus:outline-2 focus:outline-statusInfoSolid"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setSettings((prev) => ({
+                  ...prev,
+                  configOffsite: joinOffsiteUrls(configOffsiteUrls(prev.configOffsite).filter((_, j) => j !== i)),
+                }));
+              }}
+              className="text-xs text-red-500 hover:text-red-400 px-1 py-1 shrink-0"
+              title="Remove"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => {
+            const urls = configOffsiteUrls(settings.configOffsite);
+            urls.push("");
+            setSettings((prev) => ({ ...prev, configOffsite: joinOffsiteUrls(urls) }));
+          }}
+          className="self-start text-xs text-carbon-textSub hover:text-carbon-text px-2 py-1"
+        >
+          + Add another URL
+        </button>
+        {t("config.offsiteHint") && <p className="text-xs text-carbon-textMuted">{t("config.offsiteHint")}</p>}
+      </div>
 
       <ToggleRow
         label={t("config.immutable")}

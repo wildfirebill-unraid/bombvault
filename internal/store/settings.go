@@ -90,6 +90,10 @@ type Settings struct {
 	// CloudConf is the cloud-backend credentials (S3 keys, restic-REST auth) for
 	// off-site repos, an AES-256-GCM-encrypted JSON blob (base64). Empty = none.
 	CloudConf string
+	// GithubConf is the GitHub credentials (token, user, email) for off-site repos
+	// backed by a private GitHub repo, an AES-256-GCM-encrypted JSON blob (base64).
+	// Empty = no GitHub off-site configured.
+	GithubConf string
 	// RegistryAuths holds private container-registry credentials for the
 	// post-backup update pull (#106), an AES-256-GCM-encrypted JSON array
 	// (base64) of {host, username, token} entries. Empty = anonymous pulls only.
@@ -186,6 +190,7 @@ func (r *Repo) GetSettings() (Settings, error) {
 		       rclone_conf, notify_conf, cloud_conf, registry_auths,
 		       metrics_enabled, metrics_token, widget_token,
 		       drills_enabled, drills_schedule, drills_subset_pct, offsite_drills_enabled,
+		       github_conf,
 		       recovery_kit_ack,
 		       containers_offsite_immutable, vms_offsite_immutable, flash_offsite_immutable, config_offsite_immutable, files_offsite_immutable,
 		       offsite_growth_budget_gb, tamper_test_schedule, dr_drill_target,
@@ -213,6 +218,7 @@ func (r *Repo) GetSettings() (Settings, error) {
 		&s.RcloneConf, &s.NotifyConf, &s.CloudConf, &s.RegistryAuths,
 		&metricsEnabled, &s.MetricsToken, &s.WidgetToken,
 		&drillsEnabled, &s.DrillsSchedule, &s.DrillsSubsetPct, &offsiteDrillsEnabled,
+		&s.GithubConf,
 		&recoveryKitAck,
 		&contImmutable, &vmsImmutable, &flashImmutable, &configImmutable, &filesImmutable,
 		&s.OffsiteGrowthBudgetGB, &s.TamperTestSchedule, &s.DRDrillTarget,
@@ -296,6 +302,7 @@ func (r *Repo) UpdateSettings(s Settings) error {
 		  rclone_conf            = ?,
 		  notify_conf            = ?,
 		  cloud_conf             = ?,
+		  github_conf            = ?,
 		  registry_auths         = ?,
 		  metrics_enabled        = ?,
 		  metrics_token          = ?,
@@ -338,7 +345,7 @@ func (r *Repo) UpdateSettings(s Settings) error {
 		s.RetentionKeepLast, s.RetentionKeepDaily, s.RetentionKeepWeekly, s.RetentionKeepMonthly,
 		s.OffsiteRetentionKeepLast, s.OffsiteRetentionKeepDaily, s.OffsiteRetentionKeepWeekly, s.OffsiteRetentionKeepMonthly,
 		s.OffsiteLimitUpload, s.OffsiteLimitDownload,
-		s.RcloneConf, s.NotifyConf, s.CloudConf, s.RegistryAuths,
+		s.RcloneConf, s.NotifyConf, s.CloudConf, s.GithubConf, s.RegistryAuths,
 		boolInt(s.MetricsEnabled), s.MetricsToken, s.WidgetToken,
 		boolInt(s.DrillsEnabled), s.DrillsSchedule, s.DrillsSubsetPct, boolInt(s.OffsiteDrillsEnabled),
 		boolInt(s.RecoveryKitAck),
